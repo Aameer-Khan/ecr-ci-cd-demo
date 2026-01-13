@@ -1,118 +1,102 @@
-Title
-AWS ECR CI/CD with Terraform and GitHub Actions (OIDC)
+![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.0-blue)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Enabled-green)
 
-Overview
+# AWS ECR CI/CD with Terraform & GitHub Actions (OIDC)
 
-This project demonstrates a production-grade CI/CD workflow where Docker images are built and pushed to Amazon ECR using GitHub Actions and OIDC authentication. Infrastructure is provisioned using Terraform. No long-lived AWS credentials are used.
+Lightweight example showing how to build Docker images in GitHub Actions and push them to Amazon ECR using OIDC authentication — provisioned with Terraform.
 
-Architecture
+---
 
-Flow explained.
+**Table of Contents**
 
-• Developer pushes code
-• GitHub Actions runs CI
-• OIDC authenticates to AWS
-• Docker image built
-• Image pushed to ECR
-• ECR stores immutable images
+- [About](#about)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [GitHub Actions (OIDC) Setup](#github-actions-oidc-setup)
+- [Verify](#verify)
+- [Extending This Project](#extending-this-project)
+- [Notes](#notes)
 
-Prerequisites
+---
 
-• AWS account
-• GitHub account
-• Terraform installed
-• Docker installed
-• IAM role configured for GitHub OIDC
+## About
 
-Step 1. Provision ECR using Terraform
+This repository demonstrates a secure CI/CD flow using GitHub Actions with OIDC to authenticate to AWS and push Docker images to Amazon ECR. No long-lived AWS keys are required.
 
-Commands.
+## Features
 
-cd terraform
+- Build Docker images in GitHub Actions
+- Push images to Amazon ECR with OIDC
+- Terraform for provisioning ECR and IAM resources
+- Image scanning and lifecycle policy (configurable)
+
+## Architecture
+
+![Architecture diagram](https://github.com/user-attachments/assets/93faa46a-4f01-40d5-b879-23b66e37e97b)
+
+High-level flow: developer push → GitHub Actions → authenticate via OIDC → build & tag image → push to ECR
+
+## Prerequisites
+
+- An AWS account with permissions to create ECR and IAM resources
+- A GitHub repository
+- Terraform installed (recommended >= 1.0)
+- Docker installed locally (for local image builds)
+
+## Quick Start
+
+1. Initialize Terraform and apply to create ECR resources:
+
+```bash
 terraform init
-terraform apply
+terraform apply -auto-approve
+```
+
+2. Note the created ECR repository URI from the Terraform outputs (see `output.tf`).
+
+3. Configure your GitHub Actions workflow (replace placeholders):
+
+- `ACCOUNT_ID` – your AWS account ID
+- `IAM_ROLE_ARN` – the IAM role ARN created for GitHub OIDC
+
+```yaml
+# Example (in .github/workflows/ci.yml)
+- name: Publish to ECR
+	uses: aws-actions/amazon-ecr-login@v1
+# ... build, tag, push steps
+```
+
+## GitHub Actions (OIDC) Setup
+
+High-level steps:
+
+1. Create a GitHub OIDC provider in AWS.
+2. Create an IAM role that trusts GitHub OIDC and restricts it to your repo/branch.
+3. Attach minimum ECR permissions to the role (CreateRepository, PutImage, InitiateLayerUpload, CompleteLayerUpload, PutImageScanningConfiguration).
+
+Why OIDC?
+
+- Eliminates long-lived AWS credentials in CI
+- Provides short-lived, secure tokens
+- Enables least-privilege access
+
+## Verify
+
+- After a successful workflow run, open the AWS Console → ECR → Repositories and confirm the pushed image tagged with the commit SHA.
+
+## Extending This Project
+
+- Deploy images to EKS or ECS
+- Add additional scanning (Trivy, Clair)
+- Add multi-environment workflows (dev/stage/prod)
+
+## Notes
+
+- This repository is intentionally generic — no credentials or secrets are stored here.
+- Replace all placeholders before use.
+
+---
 
 
-Result.
-
-• ECR repository created
-• Image scanning enabled
-• Lifecycle policy applied
-
-Step 2. Configure IAM Role for GitHub OIDC
-
-High level steps.
-
-• Create OIDC provider for GitHub
-• Create IAM role
-• Restrict by repo and branch
-• Attach ECR permissions
-
-Why this matters.
-
-• No AWS keys
-• Short-lived credentials
-• Secure by default
-
-Step 3. Configure GitHub Actions
-
-Update workflow file.
-
-Replace.
-
-• <ACCOUNT_ID>
-• <IAM_ROLE_ARN>
-
-Commit to main branch.
-
-Step 4. CI/CD in action
-
-What happens on push.
-
-Build step 1
-• Checkout source
-
-Build step 2
-• Authenticate to AWS using OIDC
-
-Build step 3
-• Build Docker image
-
-Build step 4
-• Tag image with commit SHA
-
-Build step 5
-• Push image to ECR
-
-Step 5. Verify
-
-Check in AWS Console.
-
-• ECR → Repositories
-• Image with commit SHA tag
-
-Security Highlights
-
-• No static AWS credentials
-• OIDC based authentication
-• Least privilege IAM
-• Immutable image tags
-
-What this project proves (Interview section)
-
-• Understanding of CI/CD pipelines
-• Secure cloud authentication
-• Terraform for infra automation
-• Container lifecycle management
-• Production DevOps practices
-
-How to extend this project
-
-• Deploy image to EKS
-• Add Trivy image scanning
-• Add Helm deployment
-• Add multi-environment support
-
-Final Notes
-
-This repository is designed to be forked and reused. All sensitive values are placeholders and must be provided by the user.
